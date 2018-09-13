@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.atlassian.bitbucket.server</groupId>
+        <artifactId>bitbucket-parent</artifactId>
+        <version>5.8.0</version>
+    </parent>
+
+    <artifactId>bitbucket-plugins-parent</artifactId>
+    <packaging>pom</packaging>
+
+    <name>Bitbucket Server - Plugins Parent</name>
+
+    <properties>
+        <!-- Spring 4.3 is bundled for plugins, so we need to ensure our plugins compile against 4.3.x instead of
+             whatever version the host app is using. Fortunately, this is as simple as replacing a property. -->
+        <spring.libversion>4.3.5.RELEASE</spring.libversion>
+        <wadl-transform-xsl>src/main/resources/wadl-documentation.xsl</wadl-transform-xsl>
+        <swagger.target>${project.build.directory}</swagger.target>
+    </properties>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- The following is required by sub-modules that generate wadl and html docs for rest endpoints -->
+                <plugin>
+                    <groupId>com.sun.jersey.contribs</groupId>
+                    <artifactId>maven-wadl-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>generate</id>
+                            <goals>
+                                <goal>generate</goal>
+                            </goals>
+                            <phase>prepare-package</phase>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <formatWadlFile>true</formatWadlFile>
+                        <baseUri>http://example.com/rest/</baseUri>
+                        <wadlGenerators>
+                            <wadlGeneratorDescription>
+                                <className>com.sun.jersey.server.wadl.generators.WadlGeneratorApplicationDoc</className>
+                                <properties>
+                                    <property>
+                                        <name>applicationDocsFile</name>
+                                        <value>${project.build.outputDirectory}/application-doc.xml</value>
+                                    </property>
+                                </properties>
+                            </wadlGeneratorDescription>
+                            <wadlGeneratorDescription>
+                                <className>com.sun.jersey.server.wadl.generators.WadlGeneratorGrammarsSupport</className>
+                                <properties>
+                                    <property>
+                                        <name>grammarsFile</name>
+                                        <value>${project.build.outputDirectory}/application-grammars.xml</value>
+                                    </property>
+                                </properties>
+                            </wadlGeneratorDescription>
+                            <wadlGeneratorDescription>
+                                <className>
+                                    com.atlassian.plugins.rest.doclet.generators.resourcedoc.AtlassianWadlGeneratorResourceDocSupport
+                                </className>
+                                <properties>
+                                    <property>
+                                        <name>resourceDocFile</name>
+                                        <value>${project.build.outputDirectory}/resourcedoc.xml</value>
+                                    </property>
+                                </properties>
+                            </wadlGeneratorDescription>
+                        </wadlGenerators>
+                    </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>logback-classic</artifactId>
+                            <version>${logback.libversion}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>xerces</groupId>
+                            <artifactId>xercesImpl</artifactId>
+                            <version>2.9.1</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>check-dependencies</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <phase>validate</phase>
+                            <configuration>
+                                <rules>
+                                    <bannedDependencies>
+                                        <excludes>
+                                            <exclude>com.google.collections:google-collections</exclude>
+                                            <exclude>commons-logging:commons-logging:*:compile</exclude>
+                                            <exclude>log4j:log4j</exclude>
+                                            <exclude>quartz:quartz</exclude>
+                                            <exclude>org.springframework:*:${spring.libversion}:*:compile</exclude>
+                                            <!-- Blocking Spring 4 as a provided dependency is not possible because
+                                                 the Git SCM relies on that version for its tests, and Maven complains
+                                                 if a module depends on two different versions of the same artefact
+                                                 (e.g. one with the provided scope and one with the test scope). -->
+                                            <!--<exclude>org.springframework:*:${spring.libversion}:*:provided</exclude>-->
+                                            <!--
+                                              Only ban the scala-libary at compile level to prevent it from being
+                                              bundled in plugins. All Scala dependencies should depend on
+                                              org.scala-lang:scala-library with scope "provided".
+                                            -->
+                                            <exclude>org.scala-lang:scala-library:*:compile</exclude>
+                                        </excludes>
+                                        <message>Please check dependency:tree for banned dependencies</message>
+                                        <searchTransitive>true</searchTransitive>
+                                    </bannedDependencies>
+                                </rules>
+                                <fail>true</fail>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>normal-build</id>
+            <activation>
+                <property>
+                    <name>!api-compat</name>
+                </property>
+            </activation>
+            <modules>
+                <module>access-tokens</module>
+                <module>analytics-whitelist</module>
+                <module>ao-common</module>
+                <module>audit</module>
+                <module>branch-api</module>
+                <module>branch</module>
+                <module>build-api</module>
+                <module>build</module>
+                <module>bundled-hooks</module>
+                <module>cluster-info</module>
+                <module>comment-likes-api</module>
+                <module>comment-likes</module>
+                <module>connect-support</module>
+                <module>contributing-guidelines</module>
+                <module>crowd-sso</module>
+                <module>default-reviewers</module>
+                <module>embcwd-admin-spi-impl</module>
+                <module>emoticons-api</module>
+                <module>emoticons</module>
+                <module>git-api</module>
+                <module>git-common</module>
+                <module>git-lfs</module>
+                <module>git-rest</module>
+                <module>git</module>
+                <module>gpg-api</module>
+                <module>gpg</module>
+                <module>importer</module>
+                <module>jira-api</module>
+                <module>jira-development-integration</module>
+                <module>jira</module>
+                <module>mirroring-common</module>
+                <module>mirroring-mirror</module>
+                <module>mirroring-upstream</module>
+                <module>nav-links</module>
+                <module>notification-spi</module>
+                <module>notification</module>
+                <module>plugin-extender</module>
+                <module>plugin-information-provider</module>
+                <module>pull-request-cleanup</module>
+                <module>ref-restriction-api</module>
+                <module>ref-restriction-spi</module>
+                <module>ref-restriction</module>
+                <module>repository-ref-sync-api</module>
+                <module>repository-ref-sync</module>
+                <module>repository-shortcuts</module>
+                <module>rest-api</module>
+                <module>rest-model</module>
+                <module>rest-spi</module>
+                <module>rest</module>
+                <module>sal</module>
+                <module>scm-action-checks</module>
+                <module>scm-cache</module>
+                <module>ssh-api</module>
+                <module>ssh</module>
+                <module>stp-integration</module>
+                <module>tag</module>
+                <module>velocity-helper</module>
+                <module>webhooks-api</module>
+                <module>webhooks</module>
+                <module>bundled-plugins</module>
+            </modules>
+        </profile>
+        <!-- To activate this profile, use -Dapi-compat. Otherwise, it will include all the modules rather than just
+             the ones that we want to check. Alternatively you can use -Papi-compat,\!normal-build to achieve the same
+             thing -->
+        <profile>
+            <id>api-compat</id>
+            <activation>
+                <property>
+                    <name>api-compat</name>
+                </property>
+            </activation>
+            <modules>
+                <module>ao-common</module>
+                <module>branch-api</module>
+                <module>build-api</module>
+                <module>comment-likes-api</module>
+                <module>crowd-sso</module>
+                <module>emoticons-api</module>
+                <module>git-api</module>
+                <module>git-common</module>
+                <module>gpg-api</module>
+                <module>jira-api</module>
+                <module>notification-spi</module>
+                <module>ref-restriction-api</module>
+                <module>ref-restriction-spi</module>
+                <module>repository-ref-sync-api</module>
+                <module>rest-api</module>
+                <module>rest-model</module>
+                <module>rest-spi</module>
+                <module>scm-cache</module>
+                <module>ssh-api</module>
+                <module>webhooks-api</module>
+            </modules>
+        </profile>
+        <!-- This profile supports executing DAO tests for plugins against a real database by providing database-specific
+             configuration for all plugins when the real-database profile is activated.
+
+             By default, all of the ActiveObjects tests use an in-memory H2 database to run. During development,
+             this is likely to be sufficient. However, to ensure our bundled plugins run correctly on all of our
+             supported databases, it is beneficial to run our tests against them. Running the tests will verify that:
+             - Our usage of ActiveObjects is consistent cross database
+             - ActiveObjects schema creation works
+
+             net.java.ao.test.jdbc.DatabaseUpdater is used to populate data for these tests.
+
+             For real database testing within core, please look at dao-impl/pom.xml
+
+             Unfortunately, Maven only allows a single property when configuring activation. However, correct execution
+             of this profile requires that the following properties _all_ be defined:
+             - jdbc.password
+             - jdbc.url
+             - jdbc.user
+             The presence of jdbc.url activates the profile, so you do not need to use -Preal-database. For example, to
+             run the unit tests against MySQL, you could run the following from the dao-impl directory:
+             > mvn clean install -o -Djdbc.url=jdbc:mysql://localhost:3306/bitbucket \
+             >     -Djdbc.user=bitbucket -Djdbc.password=someCoolPassword
+             For simplicity, you should probably avoid exotic characters in your password and other properties; it has
+             not been tested how they might affect Surefire's execution.
+
+             This profile should be safe for use by developers if they wish to perform testing against a specific
+             database, perhaps in response to a failed build. -->
+        <profile>
+            <id>real-database</id>
+            <activation>
+                <property>
+                    <name>jdbc.url</name>
+                </property>
+            </activation>
+            <properties>
+                <failIfNoTests>false</failIfNoTests>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <groups>com.atlassian.bitbucket.ao.AbstractAoDaoTest</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+            <dependencies>
+                <!-- required so that we can target classes extending AbstractAoDaoTest -->
+                <dependency>
+                    <groupId>com.atlassian.bitbucket.server</groupId>
+                    <artifactId>bitbucket-test-util</artifactId>
+                    <scope>test</scope>
+                </dependency>
+                <!-- The drivers below are test scope for executing the AO tests against all supported DBs -->
+                <!-- Do NOT change the scope, as these jars should not be part of the plugin -->
+                <dependency>
+                    <groupId>com.microsoft.sqlserver</groupId>
+                    <artifactId>sqljdbc</artifactId>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>com.oracle.jdbc</groupId>
+                    <artifactId>ojdbc8</artifactId>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>mysql</groupId>
+                    <artifactId>mysql-connector-java</artifactId>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.hsqldb</groupId>
+                    <artifactId>hsqldb</artifactId>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.postgresql</groupId>
+                    <artifactId>postgresql</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>release</id>
+            <properties>
+                <release.javadoc.common.plugin.params>
+                    -federate bitbucket-api https://docs.atlassian.com/bitbucket-server/javadoc/${project.version}/api/reference
+                    -federationxml bitbucket-api ${basedir}/../../api/target/apidocs/reference/current.xml
+                    -federate bitbucket-spi https://docs.atlassian.com/bitbucket-server/javadoc/${project.version}/spi/reference
+                    -federationxml bitbucket-spi ${basedir}/../../spi/target/apidocs/reference/current.xml
+                </release.javadoc.common.plugin.params>
+            </properties>
+        </profile>
+        <profile>
+            <id>openApiDocs</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <configuration>
+                            <skip>false</skip>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>generate-open-api-docs</id>
+                                <phase>process-classes</phase>
+                                <configuration>
+                                    <doclet>com.atlassian.swagger.doclet.SwaggerDoclet</doclet>
+                                    <docletArtifact>
+                                        <groupId>com.atlassian.swagger</groupId>
+                                        <artifactId>atlassian-swagger-doclet</artifactId>
+                                        <version>${atl.swagger.doclet.version}</version>
+                                    </docletArtifact>
+
+                                    <!-- Needed to ensure class path reading of code. -->
+                                    <additionalDependencies>
+                                        <additionalDependency>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>${project.artifactId}</artifactId>
+                                            <version>${project.version}</version>
+                                        </additionalDependency>
+                                    </additionalDependencies>
+
+                                    <useStandardDocletOptions>false</useStandardDocletOptions>
+
+                                    <sourcepath>src/main/java</sourcepath>
+
+                                    <additionalparam>
+                                        -d ${swagger.target}
+                                        -pluginDescriptor ${basedir}/src/main/resources/atlassian-plugin.xml
+                                        -enableAtlassianJson false
+                                        -enableSchemaGeneration false
+                                        -Xdoclint:none
+                                    </additionalparam>
+                                </configuration>
+                                <goals>
+                                    <goal>javadoc</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

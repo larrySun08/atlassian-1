@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.atlassian.bitbucket.server</groupId>
+        <artifactId>bitbucket-parent</artifactId>
+        <version>5.8.0</version>
+    </parent>
+
+    <artifactId>bitbucket-it-parent</artifactId>
+    <packaging>pom</packaging>
+
+    <name>Bitbucket Server - Integration Test Parent</name>
+
+    <modules>
+        <module>common</module>
+        <module>page-objects</module>
+        <module>hosting-test-util</module>
+        <module>javascript-tests</module>
+    </modules>
+
+    <properties>
+        <license.scope>test</license.scope>
+        <atlassian.org.osgi.framework.bootdelegation>
+            weblogic,weblogic.*,
+            META-INF.services,
+            com.yourkit,com.yourkit.*,
+            com.chronon,com.chronon.*,
+            com.jprofiler,com.jprofiler.*,
+            org.apache.xerces,org.apache.xerces.*,
+            org.apache.xalan,org.apache.xalan.*,
+            org.apache.xml.serializer,
+            sun.*,
+            com.sun.xml.bind.v2,
+            com.icl.saxon,
+            com_atlassian_clover,
+            com.atlassian.clover,com.atlassian.clover.*
+        </atlassian.org.osgi.framework.bootdelegation>
+        <!-- Give func tests Stash instances more time to get the AO models registered. Slow or memory-constrained
+             VMs can cause AO to give up too soon -->
+        <activeobjects.servicefactory.config.timeout>60000</activeobjects.servicefactory.config.timeout>
+        <!-- These properties are used by Surefire for the CTK tests -->
+        <!-- LoginUriProviderTest is disabled because our URI encoding is valid but different from
+             the encoding expected in the LoginUriProviderTest -->
+        <!-- TransactionalExecutorTest is excluded because Bitbucket doesn't support the TransactionalExecutor -->
+        <!-- PlatformVersionTest is temporarily disabled until atlassian-streams is correctly marked as optional -->
+        <!-- WebHookOnEventsTest is disabled for now because atlassian-connect breaks it -->
+        <platform.ctk.test.exclude>
+            com.atlassian.refapp.ctk.prettyurls.PrettyUrlsTest,
+            com.atlassian.refapp.ctk.rest.tests.WebSudoRestTest,
+            com.atlassian.refapp.ctk.sal.LicenseHandlerTest,
+            com.atlassian.refapp.ctk.sal.TransactionalExecutorTest,
+            com.atlassian.refapp.ctk.sal.ThreadLocalContextManagerTest,
+            com.atlassian.refapp.ctk.sal.UserManagerTest,
+            com.atlassian.refapp.ctk.sal.UserSettingsTest,
+            com.atlassian.refapp.ctk.version.PlatformVersionTest,
+            com.atlassian.refapp.ctk.ui.tests.UpmUiTest,
+            com.atlassian.refapp.ctk.webhooks.WebHookOnEventsTest
+        </platform.ctk.test.exclude>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.atlassian.integration.jira</groupId>
+                <artifactId>page-objects</artifactId>
+                <version>${jira.integration.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>com.atlassian.maven.plugins</groupId>
+                    <artifactId>bitbucket-maven-plugin</artifactId>
+                    <configuration>
+                        <skipITs>${skipIntegrationTests}</skipITs>
+                        <skipTests>${skipIntegrationTests}</skipTests>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <!-- There are no unit tests below this module, only integration tests. Surefire is used to run
+                             the unit tests, and Failsafe is used to run the integration tests. So we can fully disable
+                             the Surefire plugin below here; it's not necessary. -->
+                        <excludes>
+                            <exclude>it/**/*.java</exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <profiles>
+        <profile>
+            <!-- builds all artifacts required for amps. The amps.prepare profile activated by the
+                 release plugin (see maven-release-plugin) -->
+            <id>amps.prepare</id>
+            <modules>
+                <module>plugin-test-resources</module>
+            </modules>
+        </profile>
+
+        <!-- mvn install -Pit runs the integration tests -->
+        <profile>
+            <id>it</id>
+            <modules>
+                <!-- plugin-test-resources needs to be before func-tests, because it
+                generates the initial home for the tests. -->
+                <module>plugin-test-resources</module>
+                <module>browser</module>
+                <module>rest</module>
+                <module>hosting</module>
+                <module>migration</module>
+                <module>mirror</module>
+                <module>setup</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>it.smoke</id>
+            <modules>
+                <module>smoke</module>
+            </modules>
+        </profile>
+        <!-- During a release, make sure we transform all the poms -->
+        <profile>
+            <id>release-pom-transform</id>
+            <modules>
+                <module>installer</module>
+                <!--<module>mirror/cloud</module>-->
+                <module>pact</module>
+                <module>smoke</module>
+                <module>dev-resources</module>
+                <module>page-weight</module>
+                <module>browser-performance</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>it.browser</id>
+            <modules>
+                <!-- plugin-test-resources needs to be before func-tests, because it
+                     generates the initial home for the tests. -->
+                <module>plugin-test-resources</module>
+                <module>browser</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>it.dev-resources</id>
+            <modules>
+                <module>dev-resources</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>it.pageweight</id>
+            <modules>
+                <module>plugin-test-resources</module>
+                <module>page-weight</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>it.browserperf</id>
+            <modules>
+                <module>plugin-test-resources</module>
+                <module>browser-performance</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>it.rest</id>
+            <modules>
+                <!-- plugin-test-resources needs to be before func-tests, because it
+                     generates the initial home for the tests. -->
+                <module>plugin-test-resources</module>
+                <module>rest</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>it.hosting</id>
+            <modules>
+                <!-- plugin-test-resources needs to be before func-tests, because it
+                     generates the initial home for the tests. -->
+                <module>plugin-test-resources</module>
+                <module>hosting</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>it.setup</id>
+            <modules>
+                <module>setup</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>it.migration</id>
+            <modules>
+                <!-- plugin-test-resources needs to be before func-tests, because it
+                     generates the initial home for the tests. -->
+                <module>plugin-test-resources</module>
+                <module>migration</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>it.mirror</id>
+            <modules>
+                <module>plugin-test-resources</module>
+                <module>mirror</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>it.mirror.browser</id>
+            <modules>
+                <module>plugin-test-resources</module>
+                <module>mirror</module>
+            </modules>
+        </profile>
+        <!-- Removing cloud mirroring func tests until Cloud team have time to overhaul them -->
+        <!--<profile>
+            <id>it.mirror.cloud</id>
+            <modules>
+                <module>plugin-test-resources</module>
+                <module>mirror</module>
+            </modules>
+        </profile>-->
+        <profile>
+            <id>it.mirror.setup</id>
+            <modules>
+                <module>plugin-test-resources</module>
+                <module>mirror</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>it.clover</id>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>com.atlassian.maven.plugins</groupId>
+                            <artifactId>clover-maven-plugin</artifactId>
+                            <version>${clover.libversion}</version>
+                            <configuration>
+                                <distributedCoverage />
+                            </configuration>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-failsafe-plugin</artifactId>
+                            <configuration>
+                                <systemProperties>
+                                    <clover.server>true</clover.server>
+                                    <clover.distributed.coverage>ON</clover.distributed.coverage>
+                                </systemProperties>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+        <profile>
+            <id>it.clustered</id>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>com.atlassian.maven.plugins</groupId>
+                            <artifactId>load-balancer-maven-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>start-load-balancer</id>
+                                    <phase>pre-integration-test</phase>
+                                    <goals>
+                                        <goal>start</goal>
+                                    </goals>
+                                </execution>
+                                <execution>
+                                    <id>stop-load-balancer</id>
+                                    <phase>post-integration-test</phase>
+                                    <goals>
+                                        <goal>stop</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                            <configuration>
+                                <balancers>
+                                    <!-- HTTP -->
+                                    <balancer>
+                                        <port>7990</port>
+                                        <targets>
+                                            <target>
+                                                <port>7991</port>
+                                            </target>
+                                            <target>
+                                                <port>7992</port>
+                                            </target>
+                                        </targets>
+                                    </balancer>
+                                    <!-- SSH -->
+                                    <balancer>
+                                        <port>7999</port>
+                                        <targets>
+                                            <target>
+                                                <port>7998</port>
+                                            </target>
+                                            <target>
+                                                <port>7997</port>
+                                            </target>
+                                        </targets>
+                                    </balancer>
+                                </balancers>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+        <profile>
+            <id>it.installer</id>
+            <activation>
+                <property>
+                    <!-- This should have the same activation as the installer -->
+                    <name>install4j.home</name>
+                </property>
+            </activation>
+            <modules>
+                <module>installer</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>it.pact</id>
+            <modules>
+                <!-- plugin-test-resources needs to be before func-tests, because it
+                     generates the initial home for the tests. -->
+                <module>plugin-test-resources</module>
+                <module>pact</module>
+            </modules>
+        </profile>
+    </profiles>
+</project>

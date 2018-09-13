@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.atlassian.browsers</groupId>
+        <artifactId>atlassian-browsers</artifactId>
+        <version>2.7.0-m1</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>atlassian-browsers-windows</artifactId>
+    <name>${project.artifactId}</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.atlassian.browsers</groupId>
+            <artifactId>firefox</artifactId>
+            <version>${firefox.version}</version>
+            <classifier>windows</classifier>
+        </dependency>
+        <dependency>
+            <groupId>com.atlassian.browsers</groupId>
+            <artifactId>firefox-profile</artifactId>
+            <version>${firefox.profile.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.atlassian.browsers</groupId>
+            <artifactId>ie-profile</artifactId>
+            <version>${ie.profile.version}</version>
+            <classifier>windows</classifier>
+        </dependency>
+    </dependencies>
+
+
+</project>
